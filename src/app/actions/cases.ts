@@ -66,11 +66,17 @@ export async function addDebtAction(caseId: string, formData: FormData) {
 
   const isFutureClaim = formData.get("isFutureClaim") === "on";
 
+  const baseDate = toDateOrNull(formData.get("baseDate"));
+  const claimDate = baseDate ? addDays(baseDate, 1) : null;
+
+  const matchedCreditor = await prisma.creditor.findUnique({ where: { name: creditorName } });
+
   await prisma.caseDebt.create({
     data: {
       caseId,
       seq: String(formData.get("seq") || "").trim() || "1",
       creditorName,
+      creditorId: matchedCreditor?.id,
       debtDateText: emptyToNull(formData.get("debtDateText")),
       cause: emptyToNull(formData.get("cause")),
       originalAmount: toFloatOrNull(formData.get("originalAmount")),
@@ -78,6 +84,8 @@ export async function addDebtAction(caseId: string, formData: FormData) {
       isFutureClaim,
       otherCost: toFloatOrNull(formData.get("otherCost")),
       interest: toFloatOrNull(formData.get("interest")),
+      baseDate,
+      claimDate,
       basis: emptyToNull(formData.get("basis")),
       note: emptyToNull(formData.get("note")),
     },
@@ -232,4 +240,17 @@ function toFloatOrNull(v: FormDataEntryValue | null): number | null {
 function toInt(v: FormDataEntryValue | null, fallback: number): number {
   const n = parseInt(String(v ?? ""), 10);
   return Number.isFinite(n) ? n : fallback;
+}
+
+function toDateOrNull(v: FormDataEntryValue | null): Date | null {
+  const s = String(v ?? "").trim();
+  if (s === "") return null;
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function addDays(date: Date, days: number): Date {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
 }

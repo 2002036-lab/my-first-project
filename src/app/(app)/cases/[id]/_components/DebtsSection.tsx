@@ -19,13 +19,14 @@ export function DebtsSection({ caseId, debts }: { caseId: string; debts: CaseDeb
               <th className="px-3 py-2 font-medium">발생원인</th>
               <th className="px-3 py-2 font-medium text-right">채무원금</th>
               <th className="px-3 py-2 font-medium text-right">이자</th>
+              <th className="px-3 py-2 font-medium">산정기준일</th>
               <th className="px-3 py-2 font-medium"></th>
             </tr>
           </thead>
           <tbody>
             {debts.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-3 py-6 text-center text-slate-400">
+                <td colSpan={7} className="px-3 py-6 text-center text-slate-400">
                   등록된 채무가 없습니다.
                 </td>
               </tr>
@@ -39,6 +40,9 @@ export function DebtsSection({ caseId, debts }: { caseId: string; debts: CaseDeb
                   {d.isFutureClaim ? "장래구상권" : fmt(d.principal)}
                 </td>
                 <td className="px-3 py-2 text-right text-slate-700">{fmt(d.interest)}</td>
+                <td className="px-3 py-2 text-slate-600">
+                  {d.baseDate ? d.baseDate.toLocaleDateString("ko-KR") : "-"}
+                </td>
                 <td className="px-3 py-2 text-right">
                   <DeleteButton caseId={caseId} debtId={d.id} />
                 </td>
@@ -52,7 +56,7 @@ export function DebtsSection({ caseId, debts }: { caseId: string; debts: CaseDeb
                   합계
                 </td>
                 <td className="px-3 py-2 text-right">{fmt(totalPrincipal)}</td>
-                <td colSpan={2}></td>
+                <td colSpan={3}></td>
               </tr>
             </tfoot>
           )}
@@ -75,6 +79,10 @@ export function DebtsSection({ caseId, debts }: { caseId: string; debts: CaseDeb
         <input name="principal" type="number" placeholder="채무원금" className="rounded-md border border-slate-300 px-2 py-1.5" />
         <input name="interest" type="number" placeholder="이자" className="rounded-md border border-slate-300 px-2 py-1.5" />
         <input name="otherCost" type="number" placeholder="기타비용" className="rounded-md border border-slate-300 px-2 py-1.5" />
+        <div className="flex items-center gap-1">
+          <label className="whitespace-nowrap text-xs text-slate-500">산정기준일</label>
+          <input name="baseDate" type="date" className="w-full rounded-md border border-slate-300 px-2 py-1.5" />
+        </div>
 
         <label className="flex items-center gap-1 text-xs text-slate-600">
           <input type="checkbox" name="isFutureClaim" /> 장래구상권(원금 미확정)

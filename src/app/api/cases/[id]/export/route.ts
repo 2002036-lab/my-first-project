@@ -16,7 +16,7 @@ export async function GET(
     where: { id, officeId: user.officeId },
     include: {
       client: true,
-      debts: { orderBy: { seq: "asc" } },
+      debts: { orderBy: { seq: "asc" }, include: { creditor: true } },
       incomeItems: { orderBy: { yearMonth: "desc" } },
       dependents: true,
       assets: true,
