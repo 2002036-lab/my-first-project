@@ -10,7 +10,13 @@ import type {
   Creditor,
 } from "@prisma/client";
 import type { RehabCalculationResult } from "@/lib/calc/rehabilitation";
-import { addCreditorListSheet, addAssetListSheet, addRepaymentScheduleSheet } from "./officialForms";
+import {
+  addCreditorListSheet,
+  addAssetListSheet,
+  addAssetAnnexSheets,
+  addRepaymentScheduleSheet,
+  addIncomeStatementSheet,
+} from "./officialForms";
 
 const HEADER_FILL: ExcelJS.Fill = {
   type: "pattern",
@@ -43,6 +49,7 @@ function borderAll(row: ExcelJS.Row) {
   });
 }
 
+
 export interface WorkbookInput {
   client: Client;
   caseData: Case;
@@ -65,6 +72,7 @@ export async function buildRehabilitationWorkbook(input: WorkbookInput): Promise
     realEstates: input.realEstates,
     exemptAssetAmount: input.caseData.exemptAssetAmount,
   });
+  addAssetAnnexSheets(wb, { assets: input.assets, realEstates: input.realEstates });
   if (input.calc && input.caseData.caseType === "REHABILITATION") {
     addRepaymentScheduleSheet(wb, {
       caseData: input.caseData,
@@ -72,31 +80,13 @@ export async function buildRehabilitationWorkbook(input: WorkbookInput): Promise
       calc: input.calc,
     });
   }
-  addIncomeSheet(wb, input);
+  addIncomeStatementSheet(wb, {
+    incomeItems: input.incomeItems,
+    incomeAvgMonths: input.caseData.incomeAvgMonths,
+  });
   if (input.calc) addSummarySheet(wb, input);
 
   return wb.xlsx.writeBuffer();
-}
-
-function addIncomeSheet(wb: ExcelJS.Workbook, { incomeItems }: WorkbookInput) {
-  const sheet = wb.addWorksheet("소득_공제내역(참고)");
-  sheet.columns = [
-    { header: "월", key: "month", width: 12 },
-    { header: "구분", key: "kind", width: 10 },
-    { header: "항목", key: "category", width: 20 },
-    { header: "금액", key: "amount", width: 14 },
-  ];
-  styleHeaderRow(sheet.getRow(1));
-
-  incomeItems.forEach((i) => {
-    const row = sheet.addRow({
-      month: i.yearMonth,
-      kind: i.kind === "INCOME" ? "소득" : "공제",
-      category: i.category,
-      amount: i.amount,
-    });
-    borderAll(row);
-  });
 }
 
 function addSummarySheet(wb: ExcelJS.Workbook, { calc, client, caseData }: WorkbookInput) {

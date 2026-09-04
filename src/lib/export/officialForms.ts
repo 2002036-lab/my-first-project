@@ -3,6 +3,7 @@ import type {
   Case,
   CaseAsset,
   CaseDebt,
+  CaseIncomeItem,
   CaseRealEstate,
   Client,
   Creditor,
@@ -267,22 +268,27 @@ export function addAssetListSheet(
   mergeAndSet(sheet, row, 4, row, 10, "");
   row += 1;
 
-  function categoryBlock(category: string, extraNote?: string) {
+  function categoryBlock(category: string, annexSheetName?: string) {
     const total = sumByCategory(assets, category);
-    const names = namesByCategory(assets, category);
+    const hasItems = assets.some((a) => a.category === category);
     const seized = assets.some((a) => a.category === category && a.seized);
     const r1 = row;
     const r3 = row + 2;
     mergeAndSet(sheet, r1, 1, r3, 1, ASSET_CATEGORY_LABEL[category], { center: true });
     mergeAndSet(sheet, r1, 2, r3, 2, won(total), { center: true });
     mergeAndSet(sheet, r1, 3, r3, 3, seized ? "유" : "무", { center: true });
-    mergeAndSet(sheet, r1, 4, r3, 10, names || extraNote || "해당사항 없음", { center: true });
+    const note = hasItems
+      ? annexSheetName
+        ? `별지. ${annexSheetName} 참조`
+        : namesByCategory(assets, category)
+      : "해당사항 없음";
+    mergeAndSet(sheet, r1, 4, r3, 10, note, { center: true });
     row += 3;
   }
 
-  categoryBlock("DEPOSIT");
-  categoryBlock("INSURANCE");
-  categoryBlock("VEHICLE");
+  categoryBlock("DEPOSIT", "예금목록");
+  categoryBlock("INSURANCE", "보험목록");
+  categoryBlock("VEHICLE", "자동차목록");
 
   // 임차보증금
   const lease = sumByCategory(assets, "LEASE_DEPOSIT");
@@ -292,7 +298,7 @@ export function addAssetListSheet(
     mergeAndSet(sheet, r1, 1, r3, 1, "임차보증금", { center: true });
     mergeAndSet(sheet, r1, 2, r3, 2, won(lease), { center: true });
     mergeAndSet(sheet, r1, 3, r3, 3, "무", { center: true });
-    mergeAndSet(sheet, r1, 4, r3, 10, lease > 0 ? namesByCategory(assets, "LEASE_DEPOSIT") : "해당사항 없음", {
+    mergeAndSet(sheet, r1, 4, r3, 10, lease > 0 ? "별지. 임차보증금목록 참조" : "해당사항 없음", {
       center: true,
     });
     row += 3;
@@ -309,12 +315,13 @@ export function addAssetListSheet(
     mergeAndSet(sheet, r1, 1, r4, 1, "부동산", { center: true });
     mergeAndSet(sheet, r1, 2, r4, 2, won(realEstateTotal), { center: true });
     mergeAndSet(sheet, r1, 3, r4, 3, "무", { center: true });
-    const desc = realEstates.map((r) => r.location).filter(Boolean).join(" / ");
-    mergeAndSet(sheet, r1, 4, r4, 10, desc || "해당사항 없음", { center: true });
+    mergeAndSet(sheet, r1, 4, r4, 10, realEstates.length > 0 ? "별지. 부동산목록 참조" : "해당사항 없음", {
+      center: true,
+    });
     row += 4;
   }
 
-  categoryBlock("BUSINESS_INVENTORY");
+  categoryBlock("BUSINESS_INVENTORY", "사업용 설비·재고자산목록");
 
   function singleRow(category: string) {
     const total = sumByCategory(assets, category);
@@ -350,6 +357,155 @@ export function addAssetListSheet(
     center: true,
   });
   mergeAndSet(sheet, row, 3, row, 10, "");
+}
+
+// ---------------------------------------------------------------------------
+// 재산목록 별지 (품목별 상세내역)
+// ---------------------------------------------------------------------------
+
+function addItemListSheet(
+  wb: ExcelJS.Workbook,
+  {
+    sheetName,
+    title,
+    columns,
+    rows,
+  }: {
+    sheetName: string;
+    title: string;
+    columns: { header: string; width: number }[];
+    rows: ExcelJS.CellValue[][];
+  }
+) {
+  const sheet = wb.addWorksheet(sheetName);
+  sheet.columns = columns.map((c) => ({ width: c.width }));
+
+  const colCount = columns.length;
+  mergeAndSet(sheet, 1, 1, 1, colCount, title, { bold: true, size: 12 });
+  setCell(sheet, 2, colCount, "(단위 : 원)", { center: true });
+
+  const headerRow = 3;
+  columns.forEach((c, i) => {
+    setCell(sheet, headerRow, i + 1, c.header, { bold: true, center: true, fill: true });
+  });
+
+  rows.forEach((rowValues, i) => {
+    const r = headerRow + 1 + i;
+    rowValues.forEach((v, ci) => {
+      setCell(sheet, r, ci + 1, v, { center: ci !== 1 });
+    });
+  });
+}
+
+export function addAssetAnnexSheets(
+  wb: ExcelJS.Workbook,
+  { assets, realEstates }: { assets: CaseAsset[]; realEstates: CaseRealEstate[] }
+) {
+  const deposits = assets.filter((a) => a.category === "DEPOSIT");
+  if (deposits.length > 0) {
+    addItemListSheet(wb, {
+      sheetName: "별지_예금",
+      title: "별지. 예금",
+      columns: [
+        { header: "순번", width: 6 },
+        { header: "은행명", width: 20 },
+        { header: "계좌번호", width: 22 },
+        { header: "현재잔액", width: 16 },
+        { header: "비고", width: 24 },
+      ],
+      rows: deposits.map((a, i) => [i + 1, a.name ?? "", a.accountNo ?? "", won(a.amount), a.note ?? ""]),
+    });
+  }
+
+  const insurances = assets.filter((a) => a.category === "INSURANCE");
+  if (insurances.length > 0) {
+    addItemListSheet(wb, {
+      sheetName: "별지_보험료",
+      title: "별지. 보험",
+      columns: [
+        { header: "순번", width: 6 },
+        { header: "보험회사명", width: 20 },
+        { header: "증권번호", width: 22 },
+        { header: "해약반환금", width: 16 },
+        { header: "비고", width: 24 },
+      ],
+      rows: insurances.map((a, i) => [i + 1, a.name ?? "", a.accountNo ?? "", won(a.amount), a.note ?? ""]),
+    });
+  }
+
+  const vehicles = assets.filter((a) => a.category === "VEHICLE");
+  if (vehicles.length > 0) {
+    addItemListSheet(wb, {
+      sheetName: "별지_자동차",
+      title: "별지. 자동차",
+      columns: [
+        { header: "순번", width: 6 },
+        { header: "차종", width: 20 },
+        { header: "등록번호", width: 16 },
+        { header: "시세", width: 16 },
+        { header: "비고", width: 30 },
+      ],
+      rows: vehicles.map((a, i) => [i + 1, a.name ?? "", a.accountNo ?? "", won(a.amount), a.note ?? ""]),
+    });
+  }
+
+  const leases = assets.filter((a) => a.category === "LEASE_DEPOSIT");
+  if (leases.length > 0) {
+    addItemListSheet(wb, {
+      sheetName: "별지_임차보증금",
+      title: "별지. 임차보증금",
+      columns: [
+        { header: "순번", width: 6 },
+        { header: "임차물건", width: 26 },
+        { header: "보증금", width: 16 },
+        { header: "비고", width: 24 },
+      ],
+      rows: leases.map((a, i) => [i + 1, a.name ?? "", won(a.amount), a.note ?? ""]),
+    });
+  }
+
+  const inventory = assets.filter((a) => a.category === "BUSINESS_INVENTORY");
+  if (inventory.length > 0) {
+    addItemListSheet(wb, {
+      sheetName: "별지_사업용재고자산",
+      title: "별지. 사업용 설비·재고자산",
+      columns: [
+        { header: "순번", width: 6 },
+        { header: "품목", width: 22 },
+        { header: "수량/등록번호", width: 18 },
+        { header: "평가액", width: 16 },
+        { header: "비고", width: 24 },
+      ],
+      rows: inventory.map((a, i) => [i + 1, a.name ?? "", a.accountNo ?? "", won(a.amount), a.note ?? ""]),
+    });
+  }
+
+  if (realEstates.length > 0) {
+    addItemListSheet(wb, {
+      sheetName: "별지_부동산",
+      title: "별지. 부동산",
+      columns: [
+        { header: "순번", width: 6 },
+        { header: "소재지, 면적", width: 34 },
+        { header: "부동산 종류", width: 14 },
+        { header: "권리의 종류", width: 18 },
+        { header: "시가", width: 16 },
+        { header: "담보액", width: 16 },
+        { header: "환가예상액(순가치)", width: 18 },
+        { header: "비고", width: 20 },
+      ],
+      rows: realEstates.map((r, i) => [
+        i + 1,
+        r.location ?? "",
+        r.propertyType ?? "",
+        r.ownershipRight ?? "",
+        won(r.marketValue),
+        won(r.securedDebt),
+        won(Math.max((r.marketValue ?? 0) - (r.securedDebt ?? 0), 0)),
+        r.note ?? "",
+      ]),
+    });
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -473,5 +629,149 @@ export function addRepaymentScheduleSheet(
         )}원 부족합니다. 안전마진 반영 시 최소 ${won(calc.requiredBuffer)}원 추가 확보 검토 필요.`
       : "※ 변제계획의 현재가치가 청산가치 이상으로, 청산가치 보장원칙을 충족합니다.",
     { size: 10, bold: true }
+  );
+}
+
+// ---------------------------------------------------------------------------
+// 월평균소득 산출 내역서 (월별 소득/공제 피벗)
+// ---------------------------------------------------------------------------
+
+export function addIncomeStatementSheet(
+  wb: ExcelJS.Workbook,
+  { incomeItems, incomeAvgMonths }: { incomeItems: CaseIncomeItem[]; incomeAvgMonths: number }
+) {
+  const sheet = wb.addWorksheet("소득산출");
+
+  const months = Array.from(new Set(incomeItems.map((i) => i.yearMonth))).sort();
+  const colCount = Math.max(2 + months.length + 1, 4);
+  sheet.columns = Array.from({ length: colCount }, (_, i) => ({ width: i < 2 ? 14 : 12 }));
+
+  mergeAndSet(sheet, 1, 1, 1, colCount, "■ 월평균소득 산출 내역서", { bold: true, size: 13 });
+  if (months.length > 0) {
+    mergeAndSet(sheet, 2, 1, 2, colCount, `(${months[0]} ~ ${months[months.length - 1]})`, {
+      center: true,
+    });
+  }
+
+  const headerRow = 4;
+  mergeAndSet(sheet, headerRow, 1, headerRow + 1, 2, "구 분", { bold: true, center: true, fill: true });
+  months.forEach((m, i) => {
+    setCell(sheet, headerRow, 3 + i, m, { bold: true, center: true, fill: true });
+  });
+  mergeAndSet(sheet, headerRow, 3 + months.length, headerRow + 1, 3 + months.length, "합계", {
+    bold: true,
+    center: true,
+    fill: true,
+  });
+
+  function categories(kind: "INCOME" | "DEDUCTION"): string[] {
+    const seen: string[] = [];
+    incomeItems
+      .filter((i) => i.kind === kind)
+      .forEach((i) => {
+        if (!seen.includes(i.category)) seen.push(i.category);
+      });
+    return seen;
+  }
+
+  function amountFor(category: string, kind: "INCOME" | "DEDUCTION", month: string): number {
+    const item = incomeItems.find(
+      (i) => i.kind === kind && i.category === category && i.yearMonth === month
+    );
+    return item?.amount ?? 0;
+  }
+
+  function sectionTotal(cats: string[], kind: "INCOME" | "DEDUCTION", month: string): number {
+    return cats.reduce((s, cat) => s + amountFor(cat, kind, month), 0);
+  }
+
+  let row = headerRow + 2;
+  const incomeCats = categories("INCOME");
+  const incomeStartRow = row;
+  incomeCats.forEach((cat) => {
+    setCell(sheet, row, 2, cat, {});
+    let total = 0;
+    months.forEach((m, i) => {
+      const v = amountFor(cat, "INCOME", m);
+      total += v;
+      setCell(sheet, row, 3 + i, v || "", { center: true });
+    });
+    setCell(sheet, row, 3 + months.length, won(total), { center: true, bold: true });
+    row += 1;
+  });
+  if (incomeCats.length > 0) {
+    mergeAndSet(sheet, incomeStartRow, 1, row - 1, 1, "소득내역", { bold: true, center: true, fill: true });
+  }
+
+  mergeAndSet(sheet, row, 1, row, 2, "계 (A)", { bold: true, center: true, fill: true });
+  months.forEach((m, i) => {
+    setCell(sheet, row, 3 + i, won(sectionTotal(incomeCats, "INCOME", m)), { center: true, bold: true });
+  });
+  const totalA = months.reduce((s, m) => s + sectionTotal(incomeCats, "INCOME", m), 0);
+  setCell(sheet, row, 3 + months.length, won(totalA), { center: true, bold: true });
+  row += 1;
+
+  const dedCats = categories("DEDUCTION");
+  const deductionStartRow = row;
+  dedCats.forEach((cat) => {
+    setCell(sheet, row, 2, cat, {});
+    let total = 0;
+    months.forEach((m, i) => {
+      const v = amountFor(cat, "DEDUCTION", m);
+      total += v;
+      setCell(sheet, row, 3 + i, v || "", { center: true });
+    });
+    setCell(sheet, row, 3 + months.length, won(total), { center: true, bold: true });
+    row += 1;
+  });
+  if (dedCats.length > 0) {
+    mergeAndSet(sheet, deductionStartRow, 1, row - 1, 1, "공제내역", { bold: true, center: true, fill: true });
+  }
+
+  mergeAndSet(sheet, row, 1, row, 2, "계 (B)", { bold: true, center: true, fill: true });
+  months.forEach((m, i) => {
+    setCell(sheet, row, 3 + i, won(sectionTotal(dedCats, "DEDUCTION", m)), { center: true, bold: true });
+  });
+  const totalB = months.reduce((s, m) => s + sectionTotal(dedCats, "DEDUCTION", m), 0);
+  setCell(sheet, row, 3 + months.length, won(totalB), { center: true, bold: true });
+  row += 1;
+
+  mergeAndSet(sheet, row, 1, row, 2, "월 소득 (A-B)", { bold: true, center: true, fill: true });
+  months.forEach((m, i) => {
+    const a = sectionTotal(incomeCats, "INCOME", m);
+    const b = sectionTotal(dedCats, "DEDUCTION", m);
+    setCell(sheet, row, 3 + i, won(a - b), { center: true });
+  });
+  setCell(sheet, row, 3 + months.length, won(totalA - totalB), { center: true, bold: true });
+  row += 2;
+
+  const monthCount = months.length || 1;
+  setCell(sheet, row, 1, "연 소득총액(C)", { bold: true });
+  setCell(sheet, row, 2, won(totalA), { center: true });
+  setCell(sheet, row, 3, "연 공제총액(D)", { bold: true });
+  setCell(sheet, row, 4, won(totalB), { center: true });
+  row += 1;
+  setCell(sheet, row, 1, "연 실수령액(C-D)", { bold: true });
+  setCell(sheet, row, 2, won(totalA - totalB), { center: true });
+  setCell(sheet, row, 3, "월평균소득(연평균)", { bold: true });
+  setCell(sheet, row, 4, won((totalA - totalB) / monthCount), { center: true });
+  row += 2;
+
+  const recentMonths = months.slice(-incomeAvgMonths);
+  const recentTotal = recentMonths.reduce((s, m) => {
+    const a = sectionTotal(incomeCats, "INCOME", m);
+    const b = sectionTotal(dedCats, "DEDUCTION", m);
+    return s + (a - b);
+  }, 0);
+  mergeAndSet(
+    sheet,
+    row,
+    1,
+    row,
+    Math.min(6, colCount),
+    `※ 실제 계산에는 최근 ${incomeAvgMonths}개월(${recentMonths[0] ?? "-"} ~ ${
+      recentMonths[recentMonths.length - 1] ?? "-"
+    }) 평균 ${won(recentMonths.length ? recentTotal / recentMonths.length : 0)}원이 사용되었습니다.`,
+    { size: 9 }
   );
 }
