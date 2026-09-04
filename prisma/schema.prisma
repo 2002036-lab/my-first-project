@@ -1,0 +1,248 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// 조직 / 사용자
+// 지금은 사무실 1곳만 사용하지만, 나중에 여러 사무실에 판매할 것을 대비해
+// 처음부터 Office 단위로 데이터를 구획해 둔다.
+// ---------------------------------------------------------------------------
+
+model Office {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  users   User[]
+  clients Client[]
+  cases   Case[]
+}
+
+enum UserRole {
+  ADMIN
+  STAFF
+}
+
+model User {
+  id           String   @id @default(cuid())
+  officeId     String
+  office       Office   @relation(fields: [officeId], references: [id])
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         UserRole @default(STAFF)
+  createdAt    DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// 의뢰인 / 사건
+// ---------------------------------------------------------------------------
+
+model Client {
+  id         String   @id @default(cuid())
+  officeId   String
+  office     Office   @relation(fields: [officeId], references: [id])
+  name       String
+  residentNo String? // 주민등록번호
+  phone      String?
+  address    String?
+  email      String?
+  memo       String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  cases Case[]
+}
+
+enum CaseType {
+  REHABILITATION // 개인회생
+  BANKRUPTCY // 개인파산
+}
+
+enum CaseStage {
+  CONSULTATION // 상담
+  INTAKE // 접수(위임)
+  DOCUMENT_PREP // 서류준비
+  FILED // 법원제출
+  COMMENCEMENT // 개시결정
+  CONFIRMED // 인가/면책
+  CLOSED // 종결
+  DISCONTINUED // 폐지/각하
+}
+
+model Case {
+  id         String    @id @default(cuid())
+  officeId   String
+  office     Office    @relation(fields: [officeId], references: [id])
+  clientId   String
+  client     Client    @relation(fields: [clientId], references: [id])
+  caseType   CaseType
+  stage      CaseStage @default(CONSULTATION)
+  caseNumber String? // 법원 사건번호
+  court      String? // 관할법원
+
+  // 계산에 필요한 사건별 파라미터 (사무장이 직접 지정/조정)
+  repaymentMonths          Int    @default(36) // 변제기간(개월)
+  accumulationMonths       Int    @default(0) // 적립기간(개월) - 변제 개시 전 적립기간
+  incomeAvgMonths          Int    @default(12) // 월평균소득 산정에 사용할 최근 개월수
+  exemptAssetAmount        Float? // 면제재산결정 신청 금액 (수기 입력)
+  discountRatePercent      Float  @default(5) // 현재가치 계산용 연 할인율(%) - 라이프니쯔 계수
+  liquidationBufferPercent Float  @default(130) // 청산가치 보장원칙 안전마진(%)
+  finalMonthlyIncomeOverride Float? // 사무장이 최종 확정한 월소득 (미입력시 자동계산값 사용)
+  finalLivingCostOverride    Float? // 최종 확정 생계비 공제액 (미입력시 기준중위소득표 자동조회값 사용)
+
+  filedAt   DateTime?
+  memo      String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  debts        CaseDebt[]
+  incomeItems  CaseIncomeItem[]
+  dependents   CaseDependent[]
+  assets       CaseAsset[]
+  realEstates  CaseRealEstate[]
+
+  @@index([officeId])
+  @@index([clientId])
+}
+
+// ---------------------------------------------------------------------------
+// 채권자 마스터 (전국 금융기관/대부업체 주소록 - 사건 간 공유되는 참조 데이터)
+// ---------------------------------------------------------------------------
+
+model Creditor {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  address   String?
+  phone     String?
+  zipCode   String?
+  createdAt DateTime @default(now())
+
+  debts CaseDebt[]
+}
+
+// 채무일람표 항목
+model CaseDebt {
+  id           String    @id @default(cuid())
+  caseId       String
+  case         Case      @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  seq          String // 순번 (예: "1", "1-1")
+  creditorName String
+  creditorId   String?
+  creditor     Creditor? @relation(fields: [creditorId], references: [id])
+
+  debtDateText   String? // 채무발생일자 (날짜/텍스트 혼용 표기 대응)
+  cause          String? // 발생원인
+  originalAmount Float? // 최초대출금
+  principal      Float? // 채무원금
+  isFutureClaim  Boolean @default(false) // 장래구상권 등 원금 미확정 채권
+  otherCost      Float? // 기타비용
+  interest       Float? // 이자
+  baseDate       DateTime? // 산정기준일
+  claimDate      DateTime? // 청구기준일
+  basis          String? // 산정근거 (예: 금융거래확인서)
+  note           String? // 비고
+
+  createdAt DateTime @default(now())
+
+  @@index([caseId])
+}
+
+// ---------------------------------------------------------------------------
+// 소득/공제 (엑셀의 '월별 x 항목' 표를 행 단위로 정규화)
+// ---------------------------------------------------------------------------
+
+enum IncomeItemKind {
+  INCOME // 소득내역 (기본급, 식대, 사업소득 등)
+  DEDUCTION // 공제내역 (국민연금, 건강보험, 소득세 등)
+}
+
+model CaseIncomeItem {
+  id        String         @id @default(cuid())
+  caseId    String
+  case      Case           @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  kind      IncomeItemKind
+  category  String // 예: 기본급, 식대, 국민연금, 건강보험 등
+  yearMonth String // "2025-01" 형식
+  amount    Float
+
+  @@index([caseId])
+  @@unique([caseId, kind, category, yearMonth])
+}
+
+// 부양가족 (기준중위소득 가구원수 산정용)
+model CaseDependent {
+  id           String    @id @default(cuid())
+  caseId       String
+  case         Case      @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  name         String?
+  relationship String? // 배우자/자녀/부모 등
+  birthDate    DateTime?
+
+  @@index([caseId])
+}
+
+// 연도별 기준중위소득(생계비 공제 기준) - 매년 정부 고시값이 바뀌므로
+// 코드에 하드코딩하지 않고 사무실에서 직접 입력/갱신하는 참조표로 관리한다.
+model MedianIncomeStandard {
+  id            String @id @default(cuid())
+  year          Int
+  householdSize Float // 1, 1.5, 2, 3 ... (엑셀 실무상 0.5인 단위 구간 존재)
+  monthlyAmount Float
+
+  @@unique([year, householdSize])
+}
+
+// ---------------------------------------------------------------------------
+// 재산목록
+// ---------------------------------------------------------------------------
+
+enum AssetCategory {
+  CASH // 현금
+  DEPOSIT // 예금
+  INSURANCE // 보험
+  VEHICLE // 자동차/오토바이
+  LEASE_DEPOSIT // 임차보증금
+  BUSINESS_INVENTORY // 사업용 설비/재고품/비품
+  LOAN_RECEIVABLE // 대여금 채권
+  SALES_RECEIVABLE // 매출금 채권
+  EXPECTED_SEVERANCE // 예상 퇴직금
+  OTHER // 기타
+}
+
+model CaseAsset {
+  id        String        @id @default(cuid())
+  caseId    String
+  case      Case          @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  category  AssetCategory
+  name      String? // 은행명/보험사명/차종 등
+  accountNo String? // 계좌번호/증권번호/등록번호
+  amount    Float         @default(0) // 잔액/해약환급금/시세 등
+  seized    Boolean       @default(false) // 압류유무
+  note      String?
+  createdAt DateTime      @default(now())
+
+  @@index([caseId])
+}
+
+// 부동산은 항목이 많아 별도 모델로 관리
+model CaseRealEstate {
+  id             String  @id @default(cuid())
+  caseId         String
+  case           Case    @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  location       String? // 소재지, 면적
+  areaSqm        Float? // 면적(㎡)
+  propertyType   String? // 토지/건물/집합건물
+  ownershipRight String? // 권리의 종류 (소유권자 등)
+  ownershipRatio Float? // 지분(%)
+  marketValue    Float? // 환가예상액/시가
+  securedDebt    Float? // 담보권 설정액(피담보채권)
+  note           String?
+
+  @@index([caseId])
+}
