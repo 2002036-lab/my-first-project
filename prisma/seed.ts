@@ -13,17 +13,17 @@ interface CreditorSeed {
 }
 
 async function seedCreditors() {
+  const existing = await prisma.creditor.count();
+  if (existing > 0) {
+    console.log(`채권자 마스터가 이미 ${existing}건 있어 건너뜁니다.`);
+    return;
+  }
+
   const filePath = path.join(__dirname, "seed-data", "creditors.json");
   const creditors: CreditorSeed[] = JSON.parse(readFileSync(filePath, "utf-8"));
 
   console.log(`채권자 마스터 ${creditors.length}건 시딩 중...`);
-  for (const c of creditors) {
-    await prisma.creditor.upsert({
-      where: { name: c.name },
-      update: { address: c.address, phone: c.phone, zipCode: c.zipCode },
-      create: c,
-    });
-  }
+  await prisma.creditor.createMany({ data: creditors, skipDuplicates: true });
   console.log("채권자 마스터 시딩 완료.");
 }
 
