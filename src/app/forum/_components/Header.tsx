@@ -4,9 +4,9 @@ import { useState } from "react";
 
 const NAV_ITEMS = [
   { href: "#about", label: "포럼소개" },
-  { href: "#history", label: "연혁" },
+  { href: "#roadmap", label: "추진전략" },
   { href: "#organization", label: "조직도" },
-  { href: "#news", label: "활동소식" },
+  { href: "#projects", label: "추진과제" },
   { href: "#location", label: "오시는길" },
 ];
 
