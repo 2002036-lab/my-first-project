@@ -1,4 +1,12 @@
 import Header from "./_components/Header";
+import BackToTop from "./_components/BackToTop";
+import Reveal from "./_components/Reveal";
+
+const HERO_STATS = [
+  { value: "26개", label: "전문 분과위원회" },
+  { value: "5개", label: "핵심 클러스터" },
+  { value: "2026.08", label: "실행계획 확정" },
+];
 
 const STRATEGIES = [
   {
@@ -24,6 +32,14 @@ const LEADERSHIP = [
     name: "추가 예정",
     desc: "근동·칠량·마량 중 1인 추가 예정",
   },
+];
+
+const CLUSTER_ACCENTS = [
+  { badge: "bg-blue-900", ring: "border-blue-100", chip: "bg-blue-50 text-blue-800" },
+  { badge: "bg-sky-700", ring: "border-sky-100", chip: "bg-sky-50 text-sky-800" },
+  { badge: "bg-amber-600", ring: "border-amber-100", chip: "bg-amber-50 text-amber-800" },
+  { badge: "bg-rose-700", ring: "border-rose-100", chip: "bg-rose-50 text-rose-800" },
+  { badge: "bg-emerald-700", ring: "border-emerald-100", chip: "bg-emerald-50 text-emerald-800" },
 ];
 
 const CLUSTERS = [
@@ -119,31 +135,15 @@ const ROADMAP = [
 ];
 
 const KEY_PROJECTS = [
-  {
-    tag: "통합추진",
-    title: "강진 KTX 및 국립대 캠퍼스 유치",
-  },
-  {
-    tag: "AI·데이터",
-    title: "강진 AI 데이터센터 조성 지원 및 MOU",
-  },
-  {
-    tag: "에너지미래",
-    title: "월남저수지 수상태양광 및 에너지 자립마을 구축",
-  },
-  {
-    tag: "문화예술",
-    title: "고려청자 유네스코 유산 등재 지원",
-  },
-  {
-    tag: "환경생태",
-    title: "강진만 블루카본 갯벌 연구 및 해양생태 국가정원 추진",
-  },
-  {
-    tag: "건설도시",
-    title: "강진읍 도심재생 및 빈집·폐가 리모델링",
-  },
+  { tag: "통합추진", title: "강진 KTX 및 국립대 캠퍼스 유치" },
+  { tag: "AI·데이터", title: "강진 AI 데이터센터 조성 지원 및 MOU" },
+  { tag: "에너지미래", title: "월남저수지 수상태양광 및 에너지 자립마을 구축" },
+  { tag: "문화예술", title: "고려청자 유네스코 유산 등재 지원" },
+  { tag: "환경생태", title: "강진만 블루카본 갯벌 연구 및 해양생태 국가정원 추진" },
+  { tag: "건설도시", title: "강진읍 도심재생 및 빈집·폐가 리모델링" },
 ];
+
+const MAP_QUERY = encodeURIComponent("전라남도 강진군 강진읍 탐진로 111");
 
 export default function ForumHomePage() {
   return (
@@ -152,11 +152,19 @@ export default function ForumHomePage() {
 
       {/* Hero */}
       <section className="relative overflow-hidden bg-gradient-to-br from-blue-950 via-blue-900 to-sky-800 text-white">
-        <div className="mx-auto max-w-6xl px-4 py-24 sm:px-6 sm:py-32">
+        <div
+          className="pointer-events-none absolute inset-0 opacity-20"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle, rgba(255,255,255,0.5) 1px, transparent 1px)",
+            backgroundSize: "28px 28px",
+          }}
+        />
+        <div className="relative mx-auto max-w-6xl px-4 py-24 sm:px-6 sm:py-32">
           <p className="text-sm font-semibold tracking-widest text-sky-300 uppercase">
             Jeonnam · Gwangju Future Forum
           </p>
-          <h1 className="mt-4 max-w-3xl break-keep text-3xl font-bold leading-tight sm:text-5xl">
+          <h1 className="mt-4 max-w-3xl break-keep font-[family-name:var(--font-noto-serif-kr)] text-3xl font-bold leading-tight sm:text-5xl">
             전남과 광주, 하나의 미래를 그립니다
           </h1>
           <p className="mt-6 max-w-xl break-keep text-base leading-relaxed text-blue-100 sm:text-lg">
@@ -167,227 +175,301 @@ export default function ForumHomePage() {
           <div className="mt-10 flex flex-wrap gap-3">
             <a
               href="#about"
-              className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-blue-900 transition-colors hover:bg-blue-50"
+              className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-blue-900 shadow-lg transition-all hover:-translate-y-0.5 hover:bg-blue-50 hover:shadow-xl"
             >
               포럼 소개 보기
             </a>
             <a
               href="#location"
-              className="rounded-full border border-white/40 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+              className="rounded-full border border-white/40 px-6 py-3 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-white/10"
             >
               문의하기
             </a>
+          </div>
+
+          <div className="mt-16 flex flex-wrap gap-x-10 gap-y-6 border-t border-white/15 pt-8">
+            {HERO_STATS.map((s) => (
+              <div key={s.label}>
+                <p className="font-[family-name:var(--font-noto-serif-kr)] text-3xl font-bold text-white">
+                  {s.value}
+                </p>
+                <p className="mt-1 text-xs font-medium tracking-wide text-blue-200 uppercase">
+                  {s.label}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* About */}
-      <section id="about" className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
-        <div className="mb-12 max-w-2xl">
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-blue-800">
+      <section id="about" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-20 sm:px-6">
+        <Reveal className="mb-12 max-w-2xl">
+          <div className="mb-2 h-1 w-10 rounded-full bg-amber-500" />
+          <h2 className="text-sm font-semibold tracking-widest text-blue-800 uppercase">
             About
           </h2>
-          <p className="mt-2 text-2xl font-bold sm:text-3xl">포럼소개</p>
+          <p className="mt-2 font-[family-name:var(--font-noto-serif-kr)] text-2xl font-bold sm:text-3xl">
+            포럼소개
+          </p>
           <p className="mt-4 break-keep leading-relaxed text-neutral-600">
             전남광주미래포럼은 지역 소멸 방지, 민생 활력 제고, 미래 기술
             유치를 위해 유기적 거버넌스를 전면 재편하고, 광주·전남의 지속
             가능한 도약과 자치분권의 완성을 추진하는 민간 협력 포럼입니다.
           </p>
-        </div>
+        </Reveal>
 
         <div className="grid gap-6 sm:grid-cols-3">
           {STRATEGIES.map((v, i) => (
-            <div
-              key={v.title}
-              className="rounded-2xl border border-neutral-200 p-6 shadow-sm"
-            >
-              <span className="text-xs font-bold text-blue-800">
-                전략 {i + 1}
-              </span>
-              <h3 className="mt-2 text-lg font-bold text-blue-900">
-                {v.title}
-              </h3>
-              <p className="mt-3 break-keep text-sm leading-relaxed text-neutral-600">
-                {v.desc}
-              </p>
-            </div>
+            <Reveal key={v.title}>
+              <div className="h-full rounded-2xl border border-neutral-200 p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
+                <span className="text-xs font-bold text-blue-800">
+                  전략 {i + 1}
+                </span>
+                <h3 className="mt-2 font-[family-name:var(--font-noto-serif-kr)] text-lg font-bold text-blue-900">
+                  {v.title}
+                </h3>
+                <p className="mt-3 break-keep text-sm leading-relaxed text-neutral-600">
+                  {v.desc}
+                </p>
+              </div>
+            </Reveal>
           ))}
         </div>
 
-        <blockquote className="mt-14 rounded-2xl bg-neutral-50 p-8 sm:p-10">
-          <p className="break-keep text-lg leading-relaxed text-neutral-800 sm:text-xl">
-            &ldquo;현장에 밀착한 26개 분과의 전문성, 투명하고 강력한
-            리더십, 그리고 결과를 만들어내는 3단계 실행 엔진으로 전남광주미래포럼이
-            지속 가능한 지역 균형 발전과 자치분권의 새로운 표준을
-            만듭니다.&rdquo;
-          </p>
-          <footer className="mt-4 text-sm font-semibold text-neutral-500">
-            전남광주미래포럼 총괄담당 최영환
-          </footer>
-        </blockquote>
+        <Reveal>
+          <blockquote className="mt-14 rounded-2xl bg-neutral-50 p-8 sm:p-10">
+            <p className="break-keep font-[family-name:var(--font-noto-serif-kr)] text-lg leading-relaxed text-neutral-800 sm:text-xl">
+              &ldquo;현장에 밀착한 26개 분과의 전문성, 투명하고 강력한
+              리더십, 그리고 결과를 만들어내는 3단계 실행 엔진으로
+              전남광주미래포럼이 지속 가능한 지역 균형 발전과 자치분권의 새로운
+              표준을 만듭니다.&rdquo;
+            </p>
+            <footer className="mt-4 text-sm font-semibold text-neutral-500">
+              전남광주미래포럼 총괄담당 최영환
+            </footer>
+          </blockquote>
+        </Reveal>
       </section>
 
       {/* Roadmap */}
-      <section id="roadmap" className="bg-neutral-50 py-20">
+      <section id="roadmap" className="scroll-mt-20 bg-neutral-50 py-20">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-blue-800">
-            Roadmap
-          </h2>
-          <p className="mt-2 text-2xl font-bold sm:text-3xl">추진전략</p>
-          <p className="mt-4 text-sm font-semibold text-blue-900">
-            2026.08.30 — 26개 분과위원회 구성 및 실행계획 확정
-          </p>
+          <Reveal>
+            <div className="mb-2 h-1 w-10 rounded-full bg-amber-500" />
+            <h2 className="text-sm font-semibold tracking-widest text-blue-800 uppercase">
+              Roadmap
+            </h2>
+            <p className="mt-2 font-[family-name:var(--font-noto-serif-kr)] text-2xl font-bold sm:text-3xl">
+              추진전략
+            </p>
+            <p className="mt-4 text-sm font-semibold text-blue-900">
+              2026.08.30 — 26개 분과위원회 구성 및 실행계획 확정
+            </p>
+          </Reveal>
 
           <div className="mt-10 grid gap-6 sm:grid-cols-3">
             {ROADMAP.map((r) => (
-              <div
-                key={r.step}
-                className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm"
-              >
-                <span className="text-xs font-bold uppercase tracking-widest text-sky-700">
-                  {r.step}
-                </span>
-                <h3 className="mt-1 text-lg font-bold text-blue-900">
-                  {r.title}
-                </h3>
-                <ul className="mt-3 space-y-2 text-sm leading-relaxed text-neutral-600">
-                  {r.items.map((item) => (
-                    <li key={item} className="break-keep">
-                      · {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              <Reveal key={r.step}>
+                <div className="h-full rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
+                  <span className="text-xs font-bold tracking-widest text-sky-700 uppercase">
+                    {r.step}
+                  </span>
+                  <h3 className="mt-1 font-[family-name:var(--font-noto-serif-kr)] text-lg font-bold text-blue-900">
+                    {r.title}
+                  </h3>
+                  <ul className="mt-3 space-y-2 text-sm leading-relaxed text-neutral-600">
+                    {r.items.map((item) => (
+                      <li key={item} className="break-keep">
+                        · {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </Reveal>
             ))}
           </div>
 
-          <p className="mt-10 break-keep rounded-2xl bg-blue-900 p-6 text-sm font-semibold text-white sm:text-base">
-            최종 목표 — 확보된 예산을 통해 전남·광주의 실질적인 균형 발전과
-            주민 삶의 질 향상으로 직접 환원합니다.
-          </p>
+          <Reveal>
+            <p className="mt-10 break-keep rounded-2xl bg-blue-900 p-6 text-sm font-semibold text-white sm:text-base">
+              최종 목표 — 확보된 예산을 통해 전남·광주의 실질적인 균형 발전과
+              주민 삶의 질 향상으로 직접 환원합니다.
+            </p>
+          </Reveal>
         </div>
       </section>
 
       {/* Organization */}
-      <section id="organization" className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
-        <h2 className="text-sm font-semibold uppercase tracking-widest text-blue-800">
-          Organization
-        </h2>
-        <p className="mt-2 text-2xl font-bold sm:text-3xl">조직도</p>
+      <section
+        id="organization"
+        className="mx-auto max-w-6xl scroll-mt-20 px-4 py-20 sm:px-6"
+      >
+        <Reveal>
+          <div className="mb-2 h-1 w-10 rounded-full bg-amber-500" />
+          <h2 className="text-sm font-semibold tracking-widest text-blue-800 uppercase">
+            Organization
+          </h2>
+          <p className="mt-2 font-[family-name:var(--font-noto-serif-kr)] text-2xl font-bold sm:text-3xl">
+            조직도
+          </p>
+        </Reveal>
 
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {LEADERSHIP.map((l) => (
-            <div
-              key={l.role}
-              className="rounded-xl border border-blue-100 bg-blue-50 px-5 py-4"
-            >
-              <p className="text-xs font-bold text-blue-800">[{l.role}]</p>
-              <p className="mt-1 font-bold text-blue-900">{l.name}</p>
-              <p className="mt-1 break-keep text-xs text-neutral-600">
-                {l.desc}
-              </p>
-            </div>
-          ))}
-        </div>
+        <Reveal className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <>
+            {LEADERSHIP.map((l) => (
+              <div
+                key={l.role}
+                className="rounded-xl border border-blue-100 bg-blue-50 px-5 py-4 transition-all hover:-translate-y-1 hover:shadow-sm"
+              >
+                <p className="text-xs font-bold text-blue-800">[{l.role}]</p>
+                <p className="mt-1 font-[family-name:var(--font-noto-serif-kr)] font-bold text-blue-900">
+                  {l.name}
+                </p>
+                <p className="mt-1 break-keep text-xs text-neutral-600">
+                  {l.desc}
+                </p>
+              </div>
+            ))}
+          </>
+        </Reveal>
 
         <div className="mt-8 grid gap-5 lg:grid-cols-2">
-          {CLUSTERS.map((c) => (
-            <div
-              key={c.no}
-              className="rounded-2xl border border-neutral-200 p-6 shadow-sm"
-            >
-              <span className="text-xs font-bold text-blue-800">
-                클러스터 {c.no}
-              </span>
-              <h3 className="mt-1 text-lg font-bold text-blue-900">
-                {c.name}
-              </h3>
-              <p className="mt-1 break-keep text-xs text-neutral-500">
-                {c.tagline}
-              </p>
-              <p className="mt-2 text-xs font-semibold text-neutral-600">
-                담당: {c.lead}
-              </p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {c.committees.map((committee) => (
+          {CLUSTERS.map((c) => {
+            const accent = CLUSTER_ACCENTS[(c.no - 1) % CLUSTER_ACCENTS.length];
+            return (
+              <Reveal key={c.no}>
+                <div
+                  className={`h-full rounded-2xl border ${accent.ring} p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md`}
+                >
                   <span
-                    key={committee}
-                    className="rounded-full bg-neutral-100 px-3 py-1 text-xs text-neutral-700"
+                    className={`inline-block rounded-full ${accent.badge} px-3 py-1 text-xs font-bold text-white`}
                   >
-                    {committee}
+                    클러스터 {c.no}
                   </span>
-                ))}
-              </div>
-            </div>
-          ))}
+                  <h3 className="mt-3 font-[family-name:var(--font-noto-serif-kr)] text-lg font-bold text-blue-900">
+                    {c.name}
+                  </h3>
+                  <p className="mt-1 break-keep text-xs text-neutral-500">
+                    {c.tagline}
+                  </p>
+                  <p className="mt-2 text-xs font-semibold text-neutral-600">
+                    담당: {c.lead}
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {c.committees.map((committee) => (
+                      <span
+                        key={committee}
+                        className={`rounded-full px-3 py-1 text-xs ${accent.chip}`}
+                      >
+                        {committee}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </Reveal>
+            );
+          })}
         </div>
       </section>
 
       {/* Key Projects */}
-      <section id="projects" className="bg-neutral-50 py-20">
+      <section id="projects" className="scroll-mt-20 bg-neutral-50 py-20">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-blue-800">
-            Key Projects
-          </h2>
-          <p className="mt-2 text-2xl font-bold sm:text-3xl">추진과제</p>
+          <Reveal>
+            <div className="mb-2 h-1 w-10 rounded-full bg-amber-500" />
+            <h2 className="text-sm font-semibold tracking-widest text-blue-800 uppercase">
+              Key Projects
+            </h2>
+            <p className="mt-2 font-[family-name:var(--font-noto-serif-kr)] text-2xl font-bold sm:text-3xl">
+              추진과제
+            </p>
+          </Reveal>
 
           <div className="mt-10 grid gap-5 sm:grid-cols-2">
             {KEY_PROJECTS.map((p) => (
-              <article
-                key={p.title}
-                className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
-              >
-                <span className="rounded-full bg-blue-900 px-3 py-1 text-xs font-semibold text-white">
-                  {p.tag}
-                </span>
-                <h3 className="mt-4 break-keep font-semibold leading-snug text-neutral-900">
-                  {p.title}
-                </h3>
-              </article>
+              <Reveal key={p.title}>
+                <article className="h-full rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
+                  <span className="rounded-full bg-blue-900 px-3 py-1 text-xs font-semibold text-white">
+                    {p.tag}
+                  </span>
+                  <h3 className="mt-4 break-keep font-semibold leading-snug text-neutral-900">
+                    {p.title}
+                  </h3>
+                </article>
+              </Reveal>
             ))}
           </div>
         </div>
       </section>
 
       {/* Location / Contact */}
-      <section id="location" className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
-        <h2 className="text-sm font-semibold uppercase tracking-widest text-blue-800">
-          Contact
-        </h2>
-        <p className="mt-2 text-2xl font-bold sm:text-3xl">오시는길</p>
+      <section
+        id="location"
+        className="mx-auto max-w-6xl scroll-mt-20 px-4 py-20 sm:px-6"
+      >
+        <Reveal>
+          <div className="mb-2 h-1 w-10 rounded-full bg-amber-500" />
+          <h2 className="text-sm font-semibold tracking-widest text-blue-800 uppercase">
+            Contact
+          </h2>
+          <p className="mt-2 font-[family-name:var(--font-noto-serif-kr)] text-2xl font-bold sm:text-3xl">
+            오시는길
+          </p>
+        </Reveal>
 
-        <div className="mt-10 grid gap-8 sm:grid-cols-2">
-          <div className="flex h-64 items-center justify-center rounded-2xl bg-neutral-100 text-sm text-neutral-400">
-            지도가 표시될 영역입니다
-          </div>
-          <dl className="space-y-4 text-sm">
-            <div>
-              <dt className="font-semibold text-neutral-500">주소</dt>
-              <dd className="mt-1 text-neutral-800">
-                [우 59228] 전남광주통합특별시 강진군 강진읍 탐진로 111
-              </dd>
-            </div>
-            <div>
-              <dt className="font-semibold text-neutral-500">대표전화</dt>
-              <dd className="mt-1 text-neutral-800">
-                061-430-3114 · 061-433-4114
-              </dd>
-            </div>
-            <div>
-              <dt className="font-semibold text-neutral-500">대표팩스</dt>
-              <dd className="mt-1 text-neutral-800">061-430-3599</dd>
-            </div>
-            <div>
-              <dt className="font-semibold text-neutral-500">이메일</dt>
-              <dd className="mt-1 text-neutral-800">2002036@naver.com</dd>
-            </div>
-          </dl>
-        </div>
+        <Reveal className="mt-10 grid gap-8 sm:grid-cols-2">
+          <>
+            <iframe
+              title="전남광주미래포럼 위치"
+              src={`https://maps.google.com/maps?q=${MAP_QUERY}&output=embed`}
+              className="h-64 w-full rounded-2xl border-0"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+            <dl className="space-y-4 text-sm">
+              <div>
+                <dt className="font-semibold text-neutral-500">주소</dt>
+                <dd className="mt-1 text-neutral-800">
+                  [우 59228] 전남광주통합특별시 강진군 강진읍 탐진로 111
+                </dd>
+              </div>
+              <div>
+                <dt className="font-semibold text-neutral-500">대표전화</dt>
+                <dd className="mt-1 text-neutral-800">
+                  <a href="tel:061-430-3114" className="hover:text-blue-800 hover:underline">
+                    061-430-3114
+                  </a>{" "}
+                  ·{" "}
+                  <a href="tel:061-433-4114" className="hover:text-blue-800 hover:underline">
+                    061-433-4114
+                  </a>
+                </dd>
+              </div>
+              <div>
+                <dt className="font-semibold text-neutral-500">대표팩스</dt>
+                <dd className="mt-1 text-neutral-800">061-430-3599</dd>
+              </div>
+              <div>
+                <dt className="font-semibold text-neutral-500">이메일</dt>
+                <dd className="mt-1 text-neutral-800">
+                  <a
+                    href="mailto:2002036@naver.com"
+                    className="hover:text-blue-800 hover:underline"
+                  >
+                    2002036@naver.com
+                  </a>
+                </dd>
+              </div>
+            </dl>
+          </>
+        </Reveal>
       </section>
 
       <footer className="border-t border-neutral-200 bg-neutral-950 py-10 text-neutral-400">
         <div className="mx-auto max-w-6xl px-4 text-sm sm:px-6">
-          <p className="font-semibold text-white">전남광주미래포럼</p>
+          <p className="font-[family-name:var(--font-noto-serif-kr)] font-semibold text-white">
+            전남광주미래포럼
+          </p>
           <p className="mt-2 break-keep">
             [우 59228] 전남광주통합특별시 강진군 강진읍 탐진로 111 · 대표전화
             061-430-3114 · 061-433-4114 · 팩스 061-430-3599 · 이메일
@@ -398,6 +480,8 @@ export default function ForumHomePage() {
           </p>
         </div>
       </footer>
+
+      <BackToTop />
     </div>
   );
 }
